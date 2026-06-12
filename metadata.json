@@ -1,0 +1,6 @@
+{
+  "name": "Smart Campus",
+  "description": "Smart Campus Digital Ecosystem backend components including Express, Prisma with PostgreSQL, Redis, JWT Authentication, and schemas",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

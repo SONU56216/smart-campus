@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: smart_campus_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: smart_campus
+      POSTGRES_USER: campus_admin
+      POSTGRES_PASSWORD: SecretCampusPassword123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U campus_admin -d smart_campus"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - campus_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: smart_campus_redis
+    restart: always
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - campus_network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  campus_network:
+    driver: bridge

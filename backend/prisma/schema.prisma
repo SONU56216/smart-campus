@@ -1,0 +1,285 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum CardStatus {
+  NOT_APPLIED
+  PENDING
+  APPROVED
+  REJECTED
+  ISSUED
+  SUSPENDED
+  EXPIRED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum ApplicationStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum ExamFormStatus {
+  SUBMITTED
+  APPROVED
+  REJECTED
+  PAID
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  ACADEMIC_ADMIN
+  FEES_ADMIN
+  ATTENDANCE_ADMIN
+  CARD_ISSUER
+}
+
+enum AttendanceMethod {
+  QR_SCAN
+  BIOMETRIC
+  MANUAL
+  GEOFENCE
+}
+
+model Student {
+  id                    String                @id @default(uuid())
+  studentId             String                @unique
+  fullName              String
+  email                 String                @unique
+  phone                 String
+  password              String
+  photo                 String?
+  signature             String?
+  dob                   DateTime
+  gender                String
+  category              String
+  bloodGroup            String
+  guardianName          String
+  guardianPhone         String
+  guardianEmail         String?
+  address               String
+  city                  String
+  state                 String
+  pincode               String
+  course                String
+  department            String
+  semester              Int
+  year                  Int
+  rollNumber            String                @unique
+  batch                 String
+  cardStatus            CardStatus            @default(NOT_APPLIED)
+  cardIssuedAt          DateTime?
+  cardExpiresAt         DateTime?
+  qrCodeData            String?               @unique
+  cardVersion           Int                   @default(1)
+  walletBalance         Float                 @default(0.0)
+  isActive              Boolean               @default(true)
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  // Relations
+  admissionApplication   AdmissionApplication?
+  examForms             ExamForm[]
+  admitCards            AdmitCard[]
+  payments              Payment[]
+  attendance            Attendance[]
+  devices               Device[]
+  notifications         Notification[]
+  activityLogs          ActivityLog[]
+}
+
+model AdmissionApplication {
+  id                String            @id @default(uuid())
+  applicationNumber String            @unique
+  studentId         String?           @unique
+  student           Student?          @relation(fields: [studentId], references: [id])
+  fullName          String
+  email             String            @unique
+  phone             String
+  course            String
+  department        String
+  dob               DateTime
+  gender            String
+  category          String
+  bloodGroup        String
+  guardianName      String
+  guardianPhone     String
+  address           String
+  city              String
+  state             String
+  pincode           String
+  highSchoolMarks   Float
+  intermediateMarks Float
+  status            ApplicationStatus @default(SUBMITTED)
+  remarks           String?
+  paymentStatus     PaymentStatus     @default(PENDING)
+  feePaid           Float             @default(500.0)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  payments          Payment[]
+}
+
+model ExamForm {
+  id              String         @id @default(uuid())
+  studentId       String
+  student         Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  semester        Int
+  academicYear    String
+  subjects        String[]
+  isBacklog       Boolean        @default(false)
+  backlogSubjects String[]
+  status          ExamFormStatus @default(SUBMITTED)
+  paymentStatus   PaymentStatus  @default(PENDING)
+  examFee         Float          @default(500.0)
+  lateFee         Float          @default(0.0)
+  totalPaid       Float          @default(0.0)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  admitCards      AdmitCard[]
+  payments        Payment[]
+}
+
+model AdmitCard {
+  id            String    @id @default(uuid())
+  studentId     String
+  student       Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  examFormId    String    @unique
+  examForm      ExamForm  @relation(fields: [examFormId], references: [id], onDelete: Cascade)
+  rollNumber    String
+  examCenter    String    @default("College Campus Main Block")
+  academicYear  String
+  semester      Int
+  qrCodeData    String    @unique
+  isReleased    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Payment {
+  id                     String                @id @default(uuid())
+  transactionId          String                @unique
+  gatewayTransactionId   String?
+  studentId              String?
+  student                Student?              @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  admissionApplicationId String?
+  admissionApplication   AdmissionApplication? @relation(fields: [admissionApplicationId], references: [id], onDelete: SetNull)
+  examFormId             String?
+  examForm               ExamForm?             @relation(fields: [examFormId], references: [id], onDelete: SetNull)
+  amount                 Float
+  purpose                String
+  status                 PaymentStatus         @default(PENDING)
+  paymentGateway         String
+  receiptUrl             String?
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+}
+
+model Attendance {
+  id              String           @id @default(uuid())
+  studentId       String
+  student         Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date            DateTime
+  status          String
+  checkedInAt     DateTime?
+  checkedOutAt    DateTime?
+  method          AttendanceMethod @default(QR_SCAN)
+  deviceId        String?
+  device          Device?          @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  location        String?
+  verifiedByAdmin String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model Device {
+  id           String       @id @default(uuid())
+  studentId    String
+  student      Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  deviceId     String       @unique
+  os           String
+  model        String
+  isTrusted    Boolean      @default(true)
+  registeredAt DateTime     @default(now())
+  lastActiveAt DateTime     @default(now())
+  attendance   Attendance[]
+}
+
+model Admin {
+  id            String          @id @default(uuid())
+  fullName      String
+  email         String          @unique
+  password      String
+  role          AdminRole       @default(ACADEMIC_ADMIN)
+  isActive      Boolean         @default(true)
+  permissions   String[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  activities    AdminActivity[]
+}
+
+model AdminActivity {
+  id          String   @id @default(uuid())
+  adminId     String
+  admin       Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  action      String
+  description String
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  studentId   String?
+  student     Student? @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title       String
+  message     String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  studentId   String?
+  student     Student? @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  action      String
+  description String
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+}
+
+model CollegeSettings {
+  id                     String   @id @default(uuid())
+  collegeName            String
+  shortName              String
+  address                String
+  email                  String
+  phone                  String
+  website                String
+  logoUrl                String?
+  establishedYear        Int
+  currentAcademicYear    String   @default("2025-2026")
+  applicationFee         Float    @default(500.0)
+  admissionFee           Float    @default(10000.0)
+  semesterFee            Float    @default(50000.0)
+  examFee                Float    @default(500.0)
+  backlogSubjectFee      Float    @default(800.0)
+  lateFee                Float    @default(200.0)
+  hostelFee              Float    @default(40000.0)
+  messFee                Float    @default(20000.0)
+  busFee                 Float    @default(15000.0)
+  cardValidityYears      Int      @default(4)
+  allowDigitalIDCheckout Boolean  @default(true)
+  updatedAt              DateTime @updatedAt
+}
