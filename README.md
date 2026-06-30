@@ -307,7 +307,7 @@ This ecosystem is licensed under the terms of the MIT License. See `LICENSE` for
 ---
 
 ## 📧 Contact
-- **Institution**: Metropolitan University of Technology
+- **Institution**: Something University of Technology
 - **Inquiry Portal**: `https://metrouni.edu.in`
-- **Help Desk Contact**: `info@metrouni.edu.in` | `+91 1122334401`
-- **Location**: Sector-12 Campus Blocks, New Delhi, India
+- **Help Desk Contact**: `info@metrouni.edu.in` | '98*********
+- **Location**: Something Campuss , Biratnagar , Nepal
